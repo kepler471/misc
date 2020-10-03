@@ -27,12 +27,13 @@
     ein                             ;; Emacs IPython Notebook
     material-theme                  ;; Theme
     solarized-theme                 ;; Theme
+    nord-theme                      ;; Theme
     fsharp-mode                     ;; F# mode
     tablist                         ;; pre-req for pdf-tools
     pdf-tools                       ;; Support library for PDF documents
     go-mode                         ;; Go programming language support
     magit                           ;; Git
-    compant                         ;; Autocompletion
+    company                         ;; Autocompletion
     company-lsp                     ;; Autocompletion
     use-package                     ;; Package configuration
     )
