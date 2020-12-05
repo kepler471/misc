@@ -58,7 +58,7 @@
 ;;(load-theme 'material t)
 (load-theme 'nord t)
 
-;; Set default font
+;; Set default font as JetBrains
 (set-frame-font "JetBrains Mono Regular 11" nil t)
 
 ;; Global linum mode off for pdf-tools compatibility
