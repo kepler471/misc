@@ -54,8 +54,12 @@
 
 (setq inhibit-startup-message t)      ;; Hide the startup message
 
-;;(load-theme 'material t)            ;; Load material theme
-(load-theme 'solarized-light t)        ;; Load material theme
+;; Load theme
+;;(load-theme 'material t)
+(load-theme 'nord t)
+
+;; Set default font
+(set-frame-font "JetBrains Mono Regular 11" nil t)
 
 ;; Global linum mode off for pdf-tools compatibility
 (global-linum-mode t)               ;; Enable line numbers globally
@@ -78,7 +82,8 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
-   '(lsp-ui flycheck-golangci-lint magit go-mode fsharp-mode material-theme better-defaults)))
+   (quote
+    (lsp-ui flycheck-golangci-lint magit go-mode fsharp-mode material-theme better-defaults))))
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
@@ -118,9 +123,9 @@
 (load "buffer-stack")
 (require 'buffer-stack)
 (global-set-key (kbd "C-{") `buffer-stack-up)
-(global-set-key [mouse-8]   `buffer-stack-up)
+(global-set-key [mouse-5]   `buffer-stack-up)
 (global-set-key (kbd "C-}") `buffer-stack-down)
-(global-set-key [mouse-9]   `buffer-stack-down)
+(global-set-key [mouse-4]   `buffer-stack-down)
 
 (global-set-key (kbd "C-x  r") `recentf-open-most-recent-file) ;; Open last open file
 
@@ -154,7 +159,9 @@
   (indent-according-to-mode))
 
 (global-set-key (kbd "<M-up>")   'move-line-up)
+(global-set-key (kbd "M-[")   'move-line-up)
 (global-set-key (kbd "<M-down>") 'move-line-down)
+(global-set-key (kbd "M-]") 'move-line-down)
 
 ;; Use elpy's Shift+return functionality globally
 (global-set-key (kbd "<S-return>") 'elpy-open-and-indent-line-below)
@@ -257,4 +264,3 @@
 ;; https://arenzana.org/2019/01/emacs-go-mode/
 
 ;; User-Defined init.el ends here
-
