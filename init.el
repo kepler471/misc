@@ -22,20 +22,25 @@
 (defvar myPackages
   '(better-defaults                 ;; Set up some better Emacs defaults
     elpy                            ;; Emacs Lisp Python Environment
-    flycheck                        ;; On the fly syntax checking
     blacken                         ;; Black formatting on save
     ein                             ;; Emacs IPython Notebook
+    go-mode                         ;; Go programming language support
+    fsharp-mode                     ;; F# mode
+    dotnet                          ;; .NET CLI
+    flycheck                        ;; On the fly syntax checking
     material-theme                  ;; Theme
     solarized-theme                 ;; Theme
     nord-theme                      ;; Theme
-    fsharp-mode                     ;; F# mode
+    eglot                           ;; eglot LSP
     tablist                         ;; pre-req for pdf-tools
     pdf-tools                       ;; Support library for PDF documents
-    go-mode                         ;; Go programming language support
     magit                           ;; Git
     company                         ;; Autocompletion
     company-lsp                     ;; Autocompletion
+    company-box                     ;; Icons for company
     use-package                     ;; Package configuration
+    multiple-cursors                ;; Multiple cursor functionality
+    which-key                       ;; Key chord completions
     )
   )
 
@@ -54,23 +59,48 @@
 
 (setq inhibit-startup-message t)      ;; Hide the startup message
 
+;; Show matching parenthesis
+(show-paren-mode 1)
+
+(delete-selection-mode t)
+
 ;; Load theme
 ;;(load-theme 'material t)
 (load-theme 'nord t)
 
-;; Set default font as JetBrains
+;; Set default font
 (set-frame-font "JetBrains Mono Regular 11" nil t)
 
-;; Global linum mode off for pdf-tools compatibility
-(global-linum-mode t)               ;; Enable line numbers globally
-(column-number-mode 1)              ;; show cursor position within line
-(tool-bar-mode -1)
+(if ( version< "27.0" emacs-version ) ; )
+    (set-fontset-font "fontset-default" 'unicode "Apple Color Emoji" nil 'prepend)
+  (warn "This Emacs version is too old to properly support emoji."))
+
+(when (window-system)
+  (tool-bar-mode -1))
+
+(use-package multiple-cursors
+  :bind (("C-c m m" . #'mc/edit-lines )
+         ("C-c m d" . #'mc/mark-all-dwim )))
+
+;; (global-linum-mode t)                ;; Older method
+(global-display-line-numbers-mode t) ;; Enable line numbers globally, is this compatible with pdf-tools
+(column-number-mode 1)               ;; show cursor position within line
 
 ;; (when (version<= "26.0.50" emacs-version )
 ;;   (global-display-line-numbers-mode)) ;; Off for pdf-tools
 
 (require 'recentf)           ;; Keep a list of recently opened files
 (recentf-mode 1)
+(add-to-list 'recentf-exclude "\\elpa")
+(add-to-list 'recentf-exclude "\\ido.last")
+(add-to-list 'recentf-exclude "\\recentf")
+(add-to-list 'recentf-exclude "\\init.el")
+
+(defun open-init-file ()
+  "Open this very file."
+  (interactive)
+  (find-file "~/.emacs.d/init.el"))
+(bind-key "C-c e" #'open-init-file)
 
 ;; Use ido-mode for find buffer and find file suggestions
 (require 'ido)
@@ -82,8 +112,7 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
-   (quote
-    (lsp-ui flycheck-golangci-lint magit go-mode fsharp-mode material-theme better-defaults))))
+   '(lsp-ui flycheck-golangci-lint magit go-mode fsharp-mode material-theme better-defaults)))
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
@@ -122,9 +151,9 @@
 ;; Load buffer-stack for tab buffer switching
 (load "buffer-stack")
 (require 'buffer-stack)
-(global-set-key (kbd "C-{") `buffer-stack-up)
+(global-set-key (kbd "C-}") `buffer-stack-up)
 (global-set-key [mouse-5]   `buffer-stack-up)
-(global-set-key (kbd "C-}") `buffer-stack-down)
+(global-set-key (kbd "C-{") `buffer-stack-down)
 (global-set-key [mouse-4]   `buffer-stack-down)
 
 (global-set-key (kbd "C-x  r") `recentf-open-most-recent-file) ;; Open last open file
@@ -166,6 +195,23 @@
 ;; Use elpy's Shift+return functionality globally
 (global-set-key (kbd "<S-return>") 'elpy-open-and-indent-line-below)
 
+(use-package which-key
+  :custom
+  (which-key-setup-side-window-bottom)
+  (which-key-enable-extended-define-key t)
+  :config
+  (which-key-setup-minibuffer))
+
+(defun copy-file-name-to-clipboard ()
+  "Copy the current buffer file name to the clipboard."
+  (interactive)
+  (let ((filename (if (equal major-mode 'dired-mode) default-directory (buffer-file-name))))
+    (when filename
+      (kill-new filename)
+      (message "Copied buffer file name '%s' to the clipboard." filename))))
+
+(bind-key "C-c P" #'copy-file-name-to-clipboard)
+
 ;; ====================================
 ;; Development Setup
 ;; ====================================
@@ -186,81 +232,59 @@
   (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
   (add-hook 'elpy-mode-hook 'flycheck-mode))
 
+;; F# mode
 (require 'fsharp-mode)
 (require 'eglot-fsharp)
-(setq inferior-fsharp-program "/usr/bin/dotnet fsi --readline-")
+;; (setq inferior-fsharp-program "/usr/bin/dotnet fsi --readline-")
+(setq inferior-fsharp-program "c:\\program files\\dotnet\\sdk\\5.0.100\\fsharp\\fsi.exe")
 (setq-default fsharp-indent-offset 2)
 (add-hook 'fsharp-mode-hook 'highlight-indentation-mode)
+(add-hook 'fsharp-mode-hook 'dotnet-mode)
 
-;; Go mode
-(use-package go-mode
-  :mode "\\.go\\'"
-  :custom (gofmt-command "goimports")
-  :bind (:map go-mode-map
-         ("C-c C-n" . go-run)
-         ("C-c ."   . go-test-current-test)
-         ("C-c f"   . go-test-current-file)
-         ("C-c a"   . go-test-current-project))
-  :config
-  (add-hook 'before-save-hook #'gofmt-before-save)
-  (use-package gotest)
-  (use-package go-tag
-    :config (setq go-tag-args (list "-transform" "camelcase"))))
+;; set prefix for lsp-command-keymap (few alternatives - "C-l", "C-c l")
+(setq lsp-keymap-prefix "C-.")
 
+(use-package lsp-mode
+    :hook (;; replace XXX-mode with concrete major-mode(e. g. python-mode)
+            (fsharp-mode . lsp)
+            ;; if you want which-key integration
+            (lsp-mode . lsp-enable-which-key-integration))
+    :commands lsp)
+
+;; optionally
+(use-package lsp-ui :commands lsp-ui-mode)
+;; if you are helm user
+;;(use-package helm-lsp :commands helm-lsp-workspace-symbol)
+;; if you are ivy user
+;;(use-package lsp-ivy :commands lsp-ivy-workspace-symbol)
+;;(use-package lsp-treemacs :commands lsp-treemacs-errors-list)
+
+;; optionally if you want to use debugger
+;;(use-package dap-mode)
+;; (use-package dap-LANGUAGE) to load the dap adapter for your language
+
+;; optional if you want which-key integration
+(use-package which-key
+    :config
+    (which-key-mode))
+
+;; Flycheck
 (use-package flycheck
 	     :ensure t)
 
-(use-package flycheck-golangci-lint
-	     :ensure t)
-
-;; Optional - provides snippet support.
-(use-package yasnippet
-  :ensure t
-  :commands yas-minor-mode
-  :hook (go-mode . yas-minor-mode))
-
-(use-package lsp-mode
-	     :ensure t
-	     ;;:custom (lsp-gopls-server-args '("debug" "127.0.0.1:0"))
-	     :commands (lsp lsp-deferred)
-	     :hook (go-mode . lsp-deferred))
-;	     config (progn
-;		      (setq lsp-prefer-flymake nil) ;; use flycheck over flymake
-;		      ;;(setq lsp-trace nil)
-;		      (setq lsp-print-performance nil) ;; 
-;		      (setq lsp-log-io nil)))
-
-;; Optional - provides fancier overlays.
-(use-package lsp-ui
-  :ensure t
-  :commands lsp-ui-mode)
-  ;;:config (progn
- ;;           ;; disable inline documentation
- ;;           (setq lsp-ui-sideline-enable nil)
- ;;           ;; disable showing docs on hover at the top of the window
- ;;           (setq lsp-ui-doc-enable nil)
-;;	    (setq lsp-ui-imenu-enable t)
-;;	    (setq lsp-ui-imenu-kind-position 'top))
-
-;; Set up before-save hooks to format buffer and add/delete imports.
-;; Make sure you don't have other gofmt/goimports hooks enabled.
-(defun lsp-go-install-save-hooks ()
-  (add-hook 'before-save-hook #'lsp-format-buffer t t)
-  (add-hook 'before-save-hook #'lsp-organize-imports t t))
-(add-hook 'go-mode-hook #'lsp-go-install-save-hooks)
-
-;; Company mode is a standard completion package that works well with lsp-mode.
+;; Company
 (use-package company
-  :ensure t
-  :config
-  ;; Optionally enable completion-as-you-type behavior.
-  (setq company-idle-delay 0)
-  (setq company-minimum-prefix-length 1))
-  ;;(setq company-tooltip-align-annotations t)
+  :defer 2
+  :diminish
+  :custom
+  (company-begin-commands '(self-insert-command))
+  (company-idle-delay .1)
+  (company-minimum-prefix-length 2)
+  (company-show-numbers t)
+  (company-tooltip-align-annotations 't)
+  (global-company-mode t))
 
-;(require 'company-lsp)
-;(push 'company-lsp company-backends)
-
-;; https://arenzana.org/2019/01/emacs-go-mode/
-
-;; User-Defined init.el ends here
+(use-package company-box
+  :after company
+  :diminish
+  :hook (company-mode . company-box-mode))
