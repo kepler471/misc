@@ -27,7 +27,10 @@
     go-mode                         ;; Go programming language support
     fsharp-mode                     ;; F# mode
     dotnet                          ;; .NET CLI
+    julia-mode                      ;; Julia language
+    julia-repl                      ;; Julia REPL
     flycheck                        ;; On the fly syntax checking
+    flycheck-julia                  ;; Flycheck support for Julia
     material-theme                  ;; Theme
     solarized-theme                 ;; Theme
     nord-theme                      ;; Theme
@@ -43,8 +46,14 @@
     which-key                       ;; Key chord completions and suggestions
     all-the-icons                   ;; Icons
     all-the-icons-dired             ;; Dired support for all-the-icons
+    dired-subtree                   ;; Working with subdirectories
     dired-sidebar                   ;; Dired sidebar window
     paredit                         ;; TODO set this up
+    vterm                           ;; Terminal emulator
+    dimmer                          ;; Visually highlight the selected buffer
+    neotree                         ;; tree style sidebar
+    projectile                      ;; Project interaction library
+    exec-path-from-shell            ;; Inherit $PATH from shell configuration
     )
   )
 
@@ -59,11 +68,33 @@
 ;; Basic Customization
 ;; ===================================
 
+(find-file "~/list.org")
+
 (defun open-init-file ()
   "Open this very file."
   (interactive)
   (find-file "~/.emacs.d/init.el"))
 (bind-key "C-c e" #'open-init-file)
+
+;;;;Org mode configuration
+;; Enable Org mode
+(require 'org)
+
+;;;; Terminal
+;; Set default shell
+
+(when (memq window-system '(mac ns x))
+  (exec-path-from-shell-initialize))
+
+(setq-default explicit-shell-file-name "bash")
+
+(set-face-attribute 'comint-highlight-prompt nil
+                    :inherit nil)
+
+;;(use-package vterm
+;;    :ensure t)
+
+(shell)
 
 ;; Load any files
 (add-to-list 'load-path "~/.emacs.d/lisp/")
@@ -76,19 +107,14 @@
 (delete-selection-mode t)
 
 ;; Load theme
-;;(load-theme 'material t)
 (load-theme 'nord t)
 
 ;; Set default font
-(set-frame-font "JetBrains Mono Regular 11" nil t)
+;;(set-frame-font "JetBrains Mono Regular 11" nil t)
 
 (if ( version< "27.0" emacs-version ) ; )
     (set-fontset-font "fontset-default" 'unicode "Apple Color Emoji" nil 'prepend)
   (warn "This Emacs version is too old to properly support emoji."))
-
-(load-library "font-lock+")
-(require 'font-lock)
-(require 'font-lock+)
 
 (use-package all-the-icons)
 (use-package all-the-icons-dired
@@ -99,6 +125,9 @@
   :bind (("C-c n" . dired-sidebar-toggle-with-current-directory))
   :ensure t
   :commands (dired-sidebar-toggle-sidebar))
+
+(require 'neotree)
+(global-set-key [f8] 'neotree-toggle)
 
 (use-package multiple-cursors
   :bind (("C-c m m" . #'mc/edit-lines )
@@ -116,10 +145,24 @@
 
 ;; TODO: Use relative line numbers?
 ;;(setq linum-format "%4d \u2502 ")
-(setq-default left-fringe-width  50)
+(setq-default left-fringe-width  5)
 
-(add-to-list 'default-frame-alist '(fullscreen . maximized))
+;; Set initial window size
+;;(add-to-list 'default-frame-alist '(fullscreen . maximized))
 
+(defconst frame-default-top      0  "The 'top'  position property of a frame.")
+(defconst frame-default-left  1708  "The 'left' position property of a frame.")
+(defconst frame-default-height 100  "The default frame height.")
+(defconst frame-default-width  119  "The default frame width.")
+
+(add-to-list 'default-frame-alist (cons 'left   frame-default-left))
+(add-to-list 'default-frame-alist (cons 'top    frame-default-top))
+(add-to-list 'default-frame-alist (cons 'height frame-default-height))
+(add-to-list 'default-frame-alist (cons 'width  frame-default-width))
+
+;; Set Frame width/height
+;;  (setq default-frame-alist
+;;        '((top . 25) (left . 275) (width . 105) (height . 60)))
 ;; (when (version<= "26.0.50" emacs-version )
 ;;   (global-display-line-numbers-mode)) ;; Off for pdf-tools
 
@@ -243,6 +286,7 @@
 ;; ====================================
 ;; Development Setup
 ;; ====================================
+
 ;; Enable pdf-tools
 (pdf-loader-install)
 
@@ -273,15 +317,15 @@
 ;;(require 'lsp-mode)
 ;;(add-hook 'fsharp-mode-hook #'lsp)
 
-;; set prefix for lsp-command-keymap (few alternatives - "C-l", "C-c l")
-(setq lsp-keymap-prefix "C-.")
-
 (use-package lsp-mode
     :hook (;; replace XXX-mode with concrete major-mode(e. g. python-mode)
             (fsharp-mode . lsp)
             ;; if you want which-key integration
             (lsp-mode . lsp-enable-which-key-integration))
     :commands lsp)
+
+;; set prefix for lsp-command-keymap (few alternatives - "C-l", "C-c l")
+(setq lsp-keymap-prefix "C-.")
 
 ;; optionally
 (use-package lsp-ui :commands lsp-ui-mode)
@@ -320,3 +364,12 @@
   :after company
   :diminish
   :hook (company-mode . company-box-mode))
+
+
+(require 'julia-mode)
+
+(require 'flycheck-julia)
+;;(flycheck-julia-setup)
+;;(add-to-list 'flycheck-global-modes 'julia-mode)
+(require 'julia-repl)
+(add-hook 'julia-mode-hook 'julia-repl-mode)
